@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jak moc se bojím, že mi něco uteče? – FoMO</title>
+<style>
+  :root { color-scheme: light; --ink:#24313a; --muted:#5d6b73; --accent:#267c80; --line:#d9e2e3; --soft:#f2f7f6; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px 14px 40px; background:#f5f7f7; color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:780px; margin:0 auto; background:white; border:1px solid var(--line); border-radius:18px; padding:clamp(20px,4vw,36px); box-shadow:0 8px 28px rgba(30,55,60,.06); }
+  h1 { font-size:clamp(1.55rem,4vw,2.1rem); line-height:1.2; margin:0 0 12px; }
+  h2 { font-size:1.25rem; margin:0 0 10px; }
+  p { margin:8px 0 14px; }
+  .intro { color:var(--muted); }
+  .notice { background:var(--soft); border-left:4px solid var(--accent); padding:12px 15px; border-radius:8px; margin:18px 0 24px; }
+  .scale { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 22px; }
+  .scale span { background:#f3f5f5; border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:.9rem; }
+  fieldset { border:0; border-top:1px solid var(--line); margin:0; padding:18px 0 20px; min-width:0; }
+  legend { font-weight:650; padding:0 8px 0 0; }
+  .number { color:var(--accent); font-weight:750; margin-right:7px; }
+  .choices { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-top:13px; }
+  .choice { position:relative; }
+  .choice input { position:absolute; opacity:0; width:1px; height:1px; }
+  .choice label { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:62px; padding:8px 4px; border:1px solid var(--line); border-radius:10px; cursor:pointer; text-align:center; font-size:.84rem; color:var(--muted); }
+  .choice label strong { display:block; color:var(--ink); font-size:1.05rem; margin-bottom:2px; }
+  .choice input:checked + label { border:2px solid var(--accent); background:#edf7f6; color:var(--ink); padding:7px 3px; }
+  .choice input:focus-visible + label { outline:3px solid #8bc7c5; outline-offset:2px; }
+  .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+  button { border:0; border-radius:10px; padding:12px 18px; font:inherit; font-weight:650; cursor:pointer; }
+  button.primary { background:var(--accent); color:white; }
+  button.secondary { background:#eef2f2; color:var(--ink); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  #status { color:var(--muted); font-size:.93rem; margin:12px 0 0; }
+  #result { display:none; margin-top:26px; padding:22px; border:1px solid var(--line); border-radius:14px; background:#fbfdfd; }
+  .score { font-size:2.6rem; line-height:1.1; font-weight:750; color:var(--accent); margin:8px 0; }
+  .bar { height:10px; background:#e8eeee; border-radius:99px; overflow:hidden; margin:14px 0 18px; }
+  .bar > div { height:100%; width:0; background:var(--accent); border-radius:99px; }
+  .reflection { background:var(--soft); border-radius:10px; padding:14px 16px; margin-top:16px; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:26px; border-top:1px solid var(--line); padding-top:16px; }
+  @media (max-width:560px) {
+    body { padding:10px 8px 24px; }
+    main { padding:20px 15px; border-radius:13px; }
+    .choices { gap:5px; }
+    .choice label { min-height:58px; font-size:.73rem; }
+    .scale span { font-size:.82rem; }
+  }
+  @media print {
+    body { background:white; padding:0; }
+    main { box-shadow:none; border:0; }
+    .actions, #status { display:none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Jak moc se bojím, že mi něco uteče?</h1>
+  <p class="intro"><strong>FoMO</strong> (Fear of Missing Out) označuje obavu, že ostatní zažívají něco zajímavého, důležitého nebo zábavného, u čeho právě nejsme.</p>
+  <div class="notice">
+    Tento dotazník je určený k sebepoznání. Nejde o psychologickou diagnózu ani test se správnými a špatnými odpověďmi. Odpovídej podle toho, jak se obvykle cítíš a co prožíváš. Výsledek ber jako podnět k zamyšlení, ne jako nálepku.
+  </div>
+  <p><strong>Instrukce:</strong> U každého tvrzení vyber, nakolik tě vystihuje.</p>
+  <div class="scale" aria-label="Možnosti odpovědí">
+    <span><strong>1</strong> Vůbec mě nevystihuje</span>
+    <span><strong>2</strong> Trochu</span>
+    <span><strong>3</strong> Částečně</span>
+    <span><strong>4</strong> Hodně</span>
+    <span><strong>5</strong> Velmi přesně</span>
+  </div>
+
+  <form id="fomoForm">
+    <div id="questions"></div>
+    <div class="actions">
+      <button class="primary" id="scoreBtn" type="submit">Vyhodnotit dotazník</button>
+      <button class="secondary" id="resetBtn" type="reset">Vymazat odpovědi</button>
+    </div>
+    <p id="status" aria-live="polite">Zodpověz všech 10 tvrzení. Výsledek se zobrazí po kliknutí na „Vyhodnotit dotazník“.</p>
+  </form>
+
+  <section id="result" aria-live="polite" aria-labelledby="resultTitle">
+    <h2 id="resultTitle">Tvůj výsledek</h2>
+    <div class="score"><span id="scoreValue">–</span> <span style="font-size:1.05rem;color:var(--muted);font-weight:500">/ 5</span></div>
+    <p id="scoreSummary"></p>
+    <div class="bar" aria-hidden="true"><div id="scoreBar"></div></div>
+    <p>Čím vyšší průměrné skóre, tím více se v odpovědích projevuje obava, že ti unikají zajímavé zážitky, informace nebo společné chvíle s ostatními.</p>
+    <div class="reflection">
+      <strong>Zkus se zamyslet:</strong>
+      <ul>
+        <li>Jak se cítím, když vidím, že se ostatní někde baví beze mě?</li>
+        <li>Dokážu si užít chvíli offline, aniž bych přemýšlel/a, co mi právě uniká?</li>
+        <li>Rozhoduji se podle toho, co opravdu chci, nebo někdy spíše ze strachu, abych o něco nepřišel/nepřišla?</li>
+      </ul>
+    </div>
+    <p><strong>Nejde o to být všude a všechno vědět. I možnost něco propásnout patří k životu.</strong></p>
+  </section>
+
+  <footer>
+    <strong>O metodice:</strong> Jde o pracovní český překlad deseti položek FoMO Scale (Przybylski et al., 2013), nikoli o ověřenou českou adaptaci. Všechny položky se skórují stejným směrem; reverzní položky zde nejsou. Výsledkem je průměr odpovědí (1–5). Pro tuto verzi nejsou stanoveny diagnostické hranice ani normy pro české středoškoláky. Odpovědi se v této stránce nikam neodesílají ani neukládají.
+  </footer>
+</main>
+<script>
+const items = [
+  "Mám obavu, že ostatní zažívají zajímavější a příjemnější věci než já.",
+  "Mám obavu, že moji kamarádi zažívají zajímavější a příjemnější věci než já.",
+  "Znepokojuje mě, když zjistím, že se moji kamarádi baví beze mě.",
+  "Jsem nervózní, když nevím, co moji kamarádi právě dělají.",
+  "Je pro mě důležité rozumět interním vtipům a narážkám svých kamarádů.",
+  "Někdy přemýšlím, jestli netrávím příliš mnoho času sledováním toho, co se kolem mě děje.",
+  "Vadí mi, když propásnu příležitost setkat se s kamarády.",
+  "Když něco příjemného zažiju, je pro mě důležité sdílet to online (například zveřejnit příspěvek nebo aktualizovat status).",
+  "Vadí mi, když se nemohu zúčastnit plánovaného setkání s kamarády.",
+  "Když jsem na dovolené, stále sleduji, co dělají moji kamarádi."
+];
+const labels = [
+  "Vůbec mě nevystihuje",
+  "Vystihuje mě trochu",
+  "Vystihuje mě částečně",
+  "Vystihuje mě hodně",
+  "Vystihuje mě velmi přesně"
+];
+const questions = document.getElementById("questions");
+items.forEach((item, i) => {
+  const fs = document.createElement("fieldset");
+  const legend = document.createElement("legend");
+  legend.innerHTML = `<span class="number">${i+1}.</span>${item}`;
+  fs.appendChild(legend);
+  const choices = document.createElement("div");
+  choices.className = "choices";
+  choices.setAttribute("role", "radiogroup");
+  choices.setAttribute("aria-label", `Odpověď na tvrzení ${i+1}`);
+  labels.forEach((label, j) => {
+    const wrap = document.createElement("div");
+    wrap.className = "choice";
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = `q${i+1}`;
+    input.id = `q${i+1}_${j+1}`;
+    input.value = String(j+1);
+    input.required = true;
+    const lab = document.createElement("label");
+    lab.htmlFor = input.id;
+    const strong = document.createElement("strong");
+    strong.textContent = String(j+1);
+    const span = document.createElement("span");
+    span.textContent = label;
+    lab.append(strong, span);
+    wrap.append(input, lab);
+    choices.appendChild(wrap);
+  });
+  fs.appendChild(choices);
+  questions.appendChild(fs);
+});
+
+const form = document.getElementById("fomoForm");
+const result = document.getElementById("result");
+const status = document.getElementById("status");
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const values = items.map((_, i) => {
+    const selected = form.querySelector(`input[name="q${i+1}"]:checked`);
+    return selected ? Number(selected.value) : null;
+  });
+  const missing = values.filter(v => v === null).length;
+  if (missing) {
+    status.textContent = `Ještě chybí ${missing} ${missing === 1 ? "odpověď" : missing < 5 ? "odpovědi" : "odpovědí"}. Doplň všechna tvrzení.`;
+    const firstMissing = values.findIndex(v => v === null);
+    form.querySelector(`input[name="q${firstMissing+1}"]`).focus();
+    result.style.display = "none";
+    return;
+  }
+  const mean = values.reduce((a,b) => a+b, 0) / values.length;
+  document.getElementById("scoreValue").textContent = mean.toFixed(2).replace(".", ",");
+  document.getElementById("scoreBar").style.width = `${(mean/5)*100}%`;
+  document.getElementById("scoreSummary").textContent =
+    `Tvoje průměrné skóre z deseti odpovědí je ${mean.toFixed(2).replace(".", ",")} z 5.`;
+  result.style.display = "block";
+  status.textContent = "Vyhodnocení je hotové. Odpovědi zůstávají pouze v tomto otevřeném formuláři.";
+  result.scrollIntoView({behavior:"smooth", block:"start"});
+});
+
+form.addEventListener("reset", () => {
+  result.style.display = "none";
+  status.textContent = "Odpovědi byly vymazány. Můžeš dotazník vyplnit znovu.";
+});
+</script>
+</body>
+</html>
